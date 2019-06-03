@@ -93,6 +93,7 @@ namespace gnuworld {
 
   const int purge = 750;
   const int removeall = 750;
+  const int newpass = 750;
 
   const int remignore = 600;
 
