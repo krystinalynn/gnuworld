@@ -75,6 +75,13 @@
 #undef USE_OPERPARTJOIN
 
 /**
+ * Do you want those silly oper-type people to have the ability 
+ * to report cservice abuse?
+ */
+ 
+#define USE_OPERHELP
+
+/**
  * Do you want users to have the ability to set their own MAXLOGINS setting?
  */
 
