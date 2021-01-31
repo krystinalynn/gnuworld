@@ -48,10 +48,23 @@ static const char* lvl_1_cmds = "\002Level    1\002: banlist status%s";
 static const char* lvl_adm_cmds = "\002Level    *\002: force unforce stats";
 static const char* lvl_0_cmds = "\002Level    0\002: access chaninfo info help* lbanlist login motd* newpass showcommands showignore verify suspendme";
 
+/* Modification by Krystii
+ * Added explanation when USE_OPERPARTJOIN isnt defined
+ */
 #ifdef USE_OPERPARTJOIN
 static const char* lvl_oper_cmds = "\002Level Oper\002: operjoin* operpart*";
 #else
-static const char* lvl_oper_cmds = "\002Level Oper\002: ";
+static const char* lvl_oper_cmds = "\002Level Oper\002: This function is disabled on Undernet.";
+#endif
+
+/* New Function: OPERHELP
+ * Adds REPORT command to X.
+ * Requires USE_OPERHELP to be defined in cservice_config.h
+ */
+#ifdef USE_OPERHELP
+static const char* lvl_oper_help = "\002CSC Abuse\002: report*";
+#else 
+static const char* lvl_oper_help = "\002CSC Abuse\002: This function is disabled on Undernet.";
 #endif
 
 bool SHOWCOMMANDSCommand::Exec( iClient* theClient, const string& Message )
@@ -134,6 +147,8 @@ bot->Notice(theClient, lvl_0_cmds);
 if (theClient->isOper())
 	{
 	bot->Notice(theClient, lvl_oper_cmds);
+	/* Added by krystii */
+	bot->Notice(theClient, lvl_oper_help);
 	}
 //	bot->Notice(theClient, cmdFooter);
 
