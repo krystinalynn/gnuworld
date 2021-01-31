@@ -134,6 +134,10 @@ DECLARE_COMMAND( SUSPENDME )
 
 DECLARE_COMMAND( OPERJOIN )
 DECLARE_COMMAND( OPERPART )
+	
+// IRCop help commands.
+// Added by krystii
+DECLARE_COMMAND( REPORT )
 
 // Admin level commands.
 
