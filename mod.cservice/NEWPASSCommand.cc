@@ -19,20 +19,20 @@
  * $Id: NEWPASSCommand.cc,v 1.17 2005/11/17 22:20:57 kewlio Exp $
  */
 
-#include	<string>
-#include	<sstream>
-#include	<iostream>
-#include	<iomanip>
-#include	<inttypes.h>
+#include        <string>
+#include        <sstream>
+#include        <iostream>
+#include        <iomanip>
+#include        <inttypes.h>
 
-#include	"md5hash.h"
-#include	"StringTokenizer.h"
-#include	"ELog.h"
-#include	"cservice.h"
-#include	"responses.h"
-#include	"networkData.h"
-#include	"cservice_config.h"
-#include	"levels.h"
+#include        "md5hash.h"
+#include        "StringTokenizer.h"
+#include        "ELog.h"
+#include        "cservice.h"
+#include        "responses.h"
+#include        "networkData.h"
+#include        "cservice_config.h"
+#include        "levels.h"
 
 const char NEWPASSCommand_cc_rcsId[] = "$Id: NEWPASSCommand.cc,v 1.17 2005/11/17 22:20:57 kewlio Exp $" ;
 
@@ -56,10 +56,10 @@ return true;
 
 StringTokenizer st( Message ) ;
 if( st.size() < 2 )
-	{
-	Usage(theClient);
-	return true;
-	}
+        {
+        Usage(theClient);
+        return true;
+        }
 
 /*
  *  Fetch the sqlUser record attached to this client. If there isn't one,
@@ -68,9 +68,9 @@ if( st.size() < 2 )
 
 sqlUser* tmpUser = bot->isAuthed(theClient, true);
 if (!tmpUser)
-	{
-	return false;
-	}
+        {
+        return false;
+        }
 
 int admAccess = (int)bot->getAdminAccessLevel(tmpUser);
 string newpass = st.assemble(1);
@@ -78,9 +78,152 @@ sqlUser* targetUser = tmpUser;
 //bool notMe = false;
 if ((admAccess) && (st.size() > 2))
 {
-	targetUser = bot->getUserRecord(st[1]);
-	if (targetUser)
-	{
-		if (admAccess < level::newpass)
-		{
-			
+        targetUser = bot->getUserRecord(st[1]);
+        if (targetUser)
+        {
+                if (admAccess < level::newpass)
+                {
+                        bot->Notice(theClient,
+                                bot->getResponse(tmpUser,
+                                        language::insuf_access,
+                                        string("You have insufficient access to perform that command.")));
+                        return false;
+                }
+                newpass = st.assemble(2);
+                sqlUser::networkClientListType::iterator clientItr = targetUser->networkClientList.begin();
+                if (targetUser->networkClientList.size() > 0)
+                {  
+                        for ( ; clientItr != targetUser->networkClientList.end(); clientItr++)
+                        {
+                                iClient* tmpClient = *clientItr;
+                                if ((string_lower(newpass) == string_lower(targetUser->getUserName()))
+                                        || (string_lower(newpass) == string_lower(tmpClient->getNickName())))
+                                {
+                                        bot->Notice(theClient,"The passphrase cannot be the target user's username or current nickname - syntax is: NEWPASS <targetUser> <new passphrase>");
+                                        return false;
+                                }
+                        }
+                }
+                else if ((string_lower(newpass) == string_lower(targetUser->getUserName())))
+                {
+                        bot->Notice(theClient,"The passphrase cannot be the target user's username - syntax is: NEWPASS <targetUser> <new passphrase>");
+                        return false;
+                }
+        }
+        else 
+                targetUser = tmpUser;
+}
+/* Try and stop people using an invalid syntax.. */
+if ( (string_lower(newpass) == string_lower(targetUser->getUserName()))
+          || (string_lower(newpass) == string_lower(theClient->getNickName())) )
+        {
+        bot->Notice(theClient,
+                bot->getResponse(targetUser,
+                        language::pass_cant_be_nick,
+                        string("Your passphrase cannot be your username or current nick - syntax is: NEWPASS <new passphrase>")));
+        return false;
+        }
+
+if (newpass.length() > 50)
+        {
+        bot->Notice(theClient, "Your passphrase cannot exceed 50 characters.");
+        return false;
+        }
+
+if (newpass.length() < 6)
+        {
+        bot->Notice(theClient, "Your passphrase cannot be less than 6 characters.");
+        return false;
+        }
+
+
+/* Work out some salt. */
+string salt;
+
+// TODO: Why calling srand() here?
+srand(clock() * 1000000);
+
+// TODO: What is the significance of '8' here?
+// Schema states a fixed 8 bytes of random salt are used in generating the
+// passowrd.
+for ( unsigned short int i = 0 ; i < 8; i++)
+        {
+        int randNo = 1+(int) (64.0*rand()/(RAND_MAX+1.0));
+        salt += validChars[randNo];
+        }
+
+/* Work out a MD5 hash of our salt + password */
+
+md5     hash; // MD5 hash algorithm object.
+md5Digest digest; // MD5Digest algorithm object.
+
+// Prepend the salt to the password
+string newPass = salt + newpass;
+
+// Take the md5 hash of this newPass string
+hash.update( (const unsigned char *)newPass.c_str(), newPass.size() );
+hash.report( digest );
+
+/* Convert to Hex */ 
+
+int data[ MD5_DIGEST_LENGTH ] = { 0 } ;
+for( size_t i = 0 ; i < MD5_DIGEST_LENGTH ; ++i )
+        {
+        int randNo = 1+(int) (64.0*rand()/(RAND_MAX+1.0));
+        salt += validChars[randNo];
+        }
+
+/* Work out a MD5 hash of our salt + password */
+
+md5     hash; // MD5 hash algorithm object.
+md5Digest digest; // MD5Digest algorithm object.
+
+// Prepend the salt to the password
+string newPass = salt + newpass;
+
+// Take the md5 hash of this newPass string
+hash.update( (const unsigned char *)newPass.c_str(), newPass.size() );
+hash.report( digest );
+
+/* Convert to Hex */ 
+
+int data[ MD5_DIGEST_LENGTH ] = { 0 } ;
+for( size_t i = 0 ; i < MD5_DIGEST_LENGTH ; ++i )
+        {
+        data[ i ] = digest[ i ] ;
+        }
+
+stringstream output;
+output << std::hex;
+output.fill('0');
+for( size_t ii = 0; ii < MD5_DIGEST_LENGTH; ii++ )
+        {
+        output << std::setw(2) << data[ii];
+        }
+output << ends;
+
+// Prepend the md5 hash to the salt
+string finalPassword = salt + output.str().c_str();
+targetUser->setPassword(finalPassword);
+
+if( targetUser->commit(theClient) )
+        {
+        bot->Notice(theClient,
+                bot->getResponse(tmpUser,
+                        language::pass_changed,
+                        string("Password successfully changed.")));
+        }
+else
+        {
+        // TODO
+        bot->Notice( theClient,
+                "NEWPASS: Unable to commit to database" ) ;
+        }
+
+return true;
+
+#endif
+
+}
+
+} // namespace gnuworld.
