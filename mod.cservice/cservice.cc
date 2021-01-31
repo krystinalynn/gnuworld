@@ -289,6 +289,11 @@ RegisterCommand(new STATSCommand(this, "STATS", "", 8));
 RegisterCommand(new ADDCOMMENTCommand(this, "ADDCOMMENT", "<username> <comment>", 10));
 RegisterCommand(new SHUTDOWNCommand(this, "SHUTDOWN", "[reason]", 10));
 
+/* Added by krystii */
+#ifdef USE_OPERHELP
+RegisterCommand(new REPORTCommand(this, "REPORT", "", 8));
+#endif
+	 
 #ifdef ALLOW_HELLO
   RegisterCommand( new HELLOCommand( this,
 	"HELLO", "<username> <email> <email>", 10 ) ) ;
